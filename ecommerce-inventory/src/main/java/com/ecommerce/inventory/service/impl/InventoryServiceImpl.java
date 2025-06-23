@@ -2,6 +2,9 @@ package com.ecommerce.inventory.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.inventory.entity.Inventory;
@@ -11,6 +14,7 @@ import com.ecommerce.inventory.service.InventoryService;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryRepository inventoryRepository;
@@ -21,6 +25,7 @@ public class InventoryServiceImpl implements InventoryService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = "itemAvailability", key = "#item.skuCode")
     public Inventory supplyItem(Item item, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Supply quantity must be greater than 0.");
@@ -78,7 +83,9 @@ public class InventoryServiceImpl implements InventoryService {
      * Returns how many units are available for the given item.
      */
     @Override
+    @Cacheable(value = "itemAvailability", key = "#item.skuCode")
     public int getAvailableQuantity(Item item) {
+        log.info("Fetching quantity from DB for: " + item.getSkuCode());
         return getInventory(item).getAvailableQuantity();
     }
 }
